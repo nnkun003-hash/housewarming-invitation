@@ -9,7 +9,7 @@
 :root{--red:#780d17;--gold:#e8c879;--cream:#fff3d9}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-snap-type:y mandatory;scroll-padding:0;}
-body{margin:0;background:#650a13;color:var(--cream);font-family:"Noto Serif SC","Songti SC","STSong",serif;overflow-x:hidden}
+body{margin:0;background:#650a13;touch-action:pan-y;color:var(--cream);font-family:"Noto Serif SC","Songti SC","STSong",serif;overflow-x:hidden}
 body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 10%,rgba(226,174,90,.16),transparent 45%),radial-gradient(ellipse at 0 90%,rgba(255,220,150,.08),transparent 40%)}
 .page{position:relative;z-index:1;height:100svh;min-height:100svh;padding:clamp(18px,4vh,40px) 22px;display:flex;align-items:center;justify-content:center;scroll-snap-align:start;scroll-snap-stop:always;}
 .panel{width:min(100%,520px);min-height:82svh;padding:clamp(34px,7vh,62px) clamp(24px,7vw,48px);border:1px solid rgba(232,200,121,.8);outline:1px solid rgba(232,200,121,.35);outline-offset:-9px;background:linear-gradient(150deg,rgba(170,35,43,.96),rgba(100,8,17,.98));box-shadow:0 24px 80px rgba(25,0,3,.35);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
@@ -77,5 +77,38 @@ async function shareInvite(){if(navigator.share){try{await navigator.share({titl
 const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('show')}),{threshold:.18});
 document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 for(let i=0;i<14;i++){const p=document.createElement('span');p.className='petal';p.textContent=i%2?'✿':'❀';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*-16+'s';p.style.animationDuration=(12+Math.random()*12)+'s';p.style.fontSize=(13+Math.random()*17)+'px';document.body.appendChild(p)}
+
+let slideIndex=0, gestureLocked=false, touchStartY=0, wheelAccum=0, wheelTimer=null;
+const slides=[...document.querySelectorAll('.page')];
+function goSlide(next){
+  const target=Math.max(0,Math.min(slides.length-1,next));
+  if(target===slideIndex && next!==slideIndex)return;
+  slideIndex=target;
+  slides[slideIndex].scrollIntoView({behavior:'smooth',block:'start'});
+}
+function lockGesture(){gestureLocked=true;setTimeout(()=>gestureLocked=false,850)}
+window.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(gestureLocked)return;
+  wheelAccum+=e.deltaY;
+  clearTimeout(wheelTimer);
+  wheelTimer=setTimeout(()=>{
+    if(Math.abs(wheelAccum)>24){goSlide(slideIndex+(wheelAccum>0?1:-1));lockGesture();}
+    wheelAccum=0;
+  },55);
+},{passive:false});
+window.addEventListener('touchstart',e=>{touchStartY=e.changedTouches[0].clientY;},{passive:true});
+window.addEventListener('touchend',e=>{
+  const delta=touchStartY-e.changedTouches[0].clientY;
+  if(Math.abs(delta)>45&&!gestureLocked){goSlide(slideIndex+(delta>0?1:-1));lockGesture();}
+},{passive:true});
+window.addEventListener('keydown',e=>{
+  if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();if(!gestureLocked){goSlide(slideIndex+1);lockGesture();}}
+  if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();if(!gestureLocked){goSlide(slideIndex-1);lockGesture();}}
+});
+const slideObserver=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{if(entry.isIntersecting&&entry.intersectionRatio>.55)slideIndex=slides.indexOf(entry.target);});
+},{threshold:[.55]});
+slides.forEach(s=>slideObserver.observe(s));
 </script>
 </body></html>
