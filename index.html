@@ -9,9 +9,9 @@
 :root{--red:#780d17;--gold:#e8c879;--cream:#fff3d9}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-snap-type:y mandatory;scroll-padding:0;}
-body{margin:0;background:#650a13;touch-action:pan-y;color:var(--cream);font-family:"Noto Serif SC","Songti SC","STSong",serif;overflow-x:hidden}
+body{margin:0;background:#650a13;touch-action:pan-y;color:var(--cream);font-family:"Noto Serif SC","Songti SC","STSong",serif;overflow:hidden}
 body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 10%,rgba(226,174,90,.16),transparent 45%),radial-gradient(ellipse at 0 90%,rgba(255,220,150,.08),transparent 40%)}
-.page{position:relative;z-index:1;height:100svh;min-height:100svh;padding:clamp(18px,4vh,40px) 22px;display:flex;align-items:center;justify-content:center;scroll-snap-align:start;scroll-snap-stop:always;}
+.slide-track{position:fixed;inset:0;width:100%;height:100svh;display:flex;flex-direction:column;transform:translate3d(0,0,0);transition:transform .78s cubic-bezier(.22,.75,.2,1);will-change:transform;z-index:1}.page{position:relative;flex:0 0 100svh;width:100%;height:100svh;min-height:100svh;padding:clamp(18px,4vh,40px) 22px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .panel{width:min(100%,520px);min-height:82svh;padding:clamp(34px,7vh,62px) clamp(24px,7vw,48px);border:1px solid rgba(232,200,121,.8);outline:1px solid rgba(232,200,121,.35);outline-offset:-9px;background:linear-gradient(150deg,rgba(170,35,43,.96),rgba(100,8,17,.98));box-shadow:0 24px 80px rgba(25,0,3,.35);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
 .panel:before,.panel:after{content:"✦　❀　✦";position:absolute;color:rgba(232,200,121,.42);font-size:22px;letter-spacing:8px}
 .panel:before{top:22px;left:18px}.panel:after{bottom:22px;right:18px}
@@ -41,7 +41,7 @@ h2{font-size:clamp(28px,8vw,42px);font-weight:500;letter-spacing:.14em;color:#ff
 </style>
 </head>
 <body>
-<section class="page" id="top"><main class="panel reveal">
+<div class="slide-track" id="slideTrack">\n<section class="page" id="top"><main class="panel reveal">
 <div class="ornament">❀　囍　❀</div><div class="eyebrow">HOUSEWARMING INVITATION</div>
 <h1>乔迁之喜</h1><div class="subtitle">新居落成 · 恭候光临</div>
 <div class="rule"></div>
@@ -80,13 +80,16 @@ for(let i=0;i<14;i++){const p=document.createElement('span');p.className='petal'
 
 let slideIndex=0, gestureLocked=false, touchStartY=0, wheelAccum=0, wheelTimer=null;
 const slides=[...document.querySelectorAll('.page')];
+const track=document.getElementById('slideTrack');
 function goSlide(next){
   const target=Math.max(0,Math.min(slides.length-1,next));
-  if(target===slideIndex && next!==slideIndex)return;
+  if(target===slideIndex)return;
   slideIndex=target;
-  slides[slideIndex].scrollIntoView({behavior:'smooth',block:'start'});
+  track.style.transform='translate3d(0,'+(-slideIndex*100)+'svh,0)';
+  slides.forEach((s,i)=>{const panel=s.querySelector('.reveal');if(panel&&i===slideIndex)panel.classList.add('show');});
 }
 function lockGesture(){gestureLocked=true;setTimeout(()=>gestureLocked=false,850)}
+slides[0].querySelector('.reveal').classList.add('show');
 window.addEventListener('wheel',e=>{
   e.preventDefault();
   if(gestureLocked)return;
@@ -106,9 +109,5 @@ window.addEventListener('keydown',e=>{
   if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();if(!gestureLocked){goSlide(slideIndex+1);lockGesture();}}
   if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();if(!gestureLocked){goSlide(slideIndex-1);lockGesture();}}
 });
-const slideObserver=new IntersectionObserver(entries=>{
-  entries.forEach(entry=>{if(entry.isIntersecting&&entry.intersectionRatio>.55)slideIndex=slides.indexOf(entry.target);});
-},{threshold:[.55]});
-slides.forEach(s=>slideObserver.observe(s));
 </script>
 </body></html>
